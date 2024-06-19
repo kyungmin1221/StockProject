@@ -6,6 +6,7 @@ import com.example.stock.repository.StockRepository;
 import org.apache.catalina.Executor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,6 +23,9 @@ class StockServiceTest {
 
     @Autowired
     private StockService stockService;
+
+    @Autowired
+    private PessimisticLockStockService pessimisticLockStockService;
 
     @Autowired
     private StockRepository stockRepository;
@@ -47,6 +51,7 @@ class StockServiceTest {
 
     // 한 아이디를 대상으로 동시에 N 개의 요청을 보낸다면?
     @Test
+    @DisplayName("비관적 락을 걸었을 경우")
     public void sameRequest() throws InterruptedException {
         int threadCount = 100;
 
@@ -59,7 +64,7 @@ class StockServiceTest {
         for (int i=0; i<100; i++) {
             executorService.submit( () -> {
                 try {
-                    stockService.decrease(1L, 1L);
+                    pessimisticLockStockService.decrease(1L, 1L);
                 } finally {
                     latch.countDown();
                 }
@@ -68,6 +73,7 @@ class StockServiceTest {
 
         latch.await();
         Stock stock = stockRepository.findById(1L).orElseThrow();
-        assertEquals(0, stock.getQuantity());
+        assertEquals(0, stock.getQuantity(),"테스트 미통과");
+        System.out.println("테스트 통과");
     }
 }
